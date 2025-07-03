@@ -1,0 +1,245 @@
+/* ====================================================================
+   App.css — Estilos Premium y Responsivos para Sabor Andino
+   ==================================================================== */
+
+/* Variables de Marca y Tokens ----------------------------------------- */
+:root {
+  --color-vino: #6c1a1a;
+  --color-oro: #d4af37;
+  --color-oro-claro: #ffe066;
+  --color-marmol: #f5f5f5;
+  --color-blanco: #ffffff;
+  --color-negro: #111111;
+
+  --font-principal: 'Segoe UI', Tahoma, sans-serif;
+  --radius: 12px;
+  --transition: all 0.3s ease-in-out;
+}
+
+/* Reset y Tipografía --------------------------------------------------- */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+html, body, #root {
+  height: 100%;
+  font-family: var(--font-principal);
+  font-size: 16px;
+  background-color: var(--color-marmol);
+  color: var(--color-negro);
+  scroll-behavior: smooth;
+}
+
+/* Enlaces ------------------------------------------------------------- */
+a {
+  color: var(--color-vino);
+  text-decoration: none;
+  transition: var(--transition);
+}
+a:hover {
+  color: var(--color-oro);
+  text-decoration: underline;
+}
+.link-fancy {
+  position: relative;
+  color: #555;
+}
+.link-fancy::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 0;
+  height: 2px;
+  background: var(--color-oro);
+  transition: width 0.3s ease;
+}
+.link-fancy:hover::after {
+  width: 100%;
+}
+
+/* Botones ------------------------------------------------------------- */
+.btn {
+  border-radius: var(--radius);
+  font-weight: 600;
+  transition: var(--transition);
+}
+.btn-primary {
+  background: linear-gradient(90deg, var(--color-vino), #4e1f1f);
+  color: var(--color-blanco);
+}
+.btn-primary:hover {
+  background: var(--color-oro);
+  transform: translateY(-2px);
+}
+.btn-secondary {
+  background-color: var(--color-oro);
+  color: var(--color-negro);
+}
+.btn-secondary:hover {
+  background-color: var(--color-oro-claro);
+}
+
+/* Navbar: PanelBarra -------------------------------------------------- */
+.panel-navbar {
+  background: linear-gradient(90deg, var(--color-vino), var(--color-vino));
+  padding: 0.75rem 1rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+.brand-glow {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--color-blanco) !important;
+  text-shadow: 0 0 10px rgba(255,215,0,0.7);
+}
+.text-gold {
+  color: var(--color-oro) !important;
+}
+
+/* Sidebar: PanelMenu & Transiciones ----------------------------------- */
+.panel-sidebar {
+  background: var(--color-vino);
+  color: var(--color-blanco);
+  padding: 2rem 1rem;
+  height: 100%;
+  transition: transform 0.3s ease;
+}
+.sidebar-collapsed .panel-sidebar {
+  transform: translateX(-110%);
+}
+.panel-sidebar .nav-link {
+  transition: background 0.2s, color 0.2s;
+}
+.panel-sidebar .nav-link:hover {
+  background: var(--color-oro-claro);
+  color: var(--color-vino) !important;
+}
+.nav-link.active {
+  font-weight: bold;
+  background: var(--color-oro);
+  color: var(--color-vino) !important;
+}
+
+/* Contenedor Principal ------------------------------------------------ */
+.panel-content {
+  background: var(--color-marmol);
+  padding: 2rem;
+  overflow-x: hidden;
+  transition: margin-left 0.3s ease;
+}
+.sidebar-collapsed .panel-content {
+  margin-left: 0;
+}
+
+/* Offcanvas (Mobile) -------------------------------------------------- */
+.offcanvas {
+  width: 260px;
+  background: var(--color-vino) !important;
+  color: var(--color-blanco) !important;
+}
+.offcanvas-header {
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+.offcanvas-body {
+  padding: 0;
+}
+.offcanvas .nav-link {
+  padding: 1rem 1.5rem;
+}
+
+/* Animaciones slide --------------------------------------------------- */
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+@keyframes slideOut {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+.sidebar-enter {
+  animation: slideIn 0.3s forwards;
+}
+.sidebar-exit {
+  animation: slideOut 0.3s forwards;
+}
+
+/* Scrollbar Custom ---------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 6px;
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-oro);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.1);
+}
+
+/* Utilidades ---------------------------------------------------------- */
+.text-center { text-align: center; }
+.p-2 { padding: 1rem; }
+.mt-2 { margin-top: 1rem; }
+.mb-2 { margin-bottom: 1rem; }
+
+/* Responsive ---------------------------------------------------------- */
+@media (max-width: 992px) {
+  .panel-sidebar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: translateX(-110%);
+    z-index: 1050;
+  }
+  .sidebar-collapsed .panel-sidebar {
+    transform: translateX(0);
+  }
+  .panel-content {
+    padding: 1.5rem;
+  }
+}
+
+.reportes-wrapper { background: #fbf9f2; }
+.reportes-header { background: linear-gradient(90deg, #4a0e0e, #d4af37); }
+.nav-lujo .nav-link { color: #4a0e0e; font-weight: 600; border-radius: 8px; transition: 0.3s; }
+.nav-lujo .nav-link.active { background: #d4af37; color: #fff !important; }
+.table-golden th { background: #d4af37; color: #4a0e0e; }
+.border-gold { border: 2px solid #d4af37 !important; }
+.text-gold { color: #d4af37 !important; }
+.text-vino { color: #4a0e0e !important; }
+.reportes-progress .progress-bar { background: #d4af37; }
+
+.bg-gradient-mesas {
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+}
+
+.bg-gradient-reservas {
+  background: linear-gradient(135deg, #00c9ff, #92fe9d);
+}
+
+.bg-gradient-carta {
+  background: linear-gradient(135deg, #f7971e, #ffd200);
+}
+
+.text-vino {
+  color: #7b1e3c;
+}
+
+.admin-inicio h2 {
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 0.5rem;
+}
+
+.card .display-5 {
+  font-weight: 600;
+}
+
+.card .badge {
+  font-size: 0.85rem;
+}
+
+/* Empuja todo el contenido hacia abajo para dejar hueco al navbar fijo */
+body {
+  padding-top: 80px; /* o la altura real de tu navbar */
+}
