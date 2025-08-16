@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { generateTimeSlots } from '../../utils/availability';
+import { FaChair, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 
 const MESAS_KEY    = 'saborandino_mesas';
 const RESERVAS_KEY = 'saborandino_reservas';
@@ -13,42 +14,69 @@ export const Reserva = () => {
     apertura:'10:00', cierre:'22:00', duracion:60, limpieza:15,
     openDays:[1,2,3,4,5,6,0], holidays:[]
   });
+
   const [form, setForm] = useState({
     cliente:'', email:'', telefono:'',
     fecha:'', hora:'', mesaId:'', invitados:1, mensaje:'', status:'Pendiente'
   });
 
-  // carga inicial
   useEffect(() => {
-    setMesas(JSON.parse(localStorage.getItem(MESAS_KEY) || '[]'));
-    setReservas(JSON.parse(localStorage.getItem(RESERVAS_KEY) || '[]'));
-    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
-    setSettings(s);
+    try {
+      const rawMesas = localStorage.getItem(MESAS_KEY) || '[]';
+      const rawReservas = localStorage.getItem(RESERVAS_KEY) || '[]';
+      const rawSettings = localStorage.getItem(SETTINGS_KEY);
+
+      setMesas(JSON.parse(rawMesas));
+      setReservas(JSON.parse(rawReservas));
+
+      if (rawSettings) {
+        const parsed = JSON.parse(rawSettings);
+        setSettings(prev => ({ ...prev, ...parsed }));
+      }
+    } catch (e) {
+      console.error('[Reserva] Error parseando localStorage en carga inicial:', e);
+    }
   }, []);
 
-  // sincroniza cambios multi-pestaña
   useEffect(() => {
     const handler = e => {
-      if (e.key === MESAS_KEY) setMesas(JSON.parse(e.newValue||'[]'));
-      if (e.key === RESERVAS_KEY) setReservas(JSON.parse(e.newValue||'[]'));
-      if (e.key === SETTINGS_KEY) setSettings(JSON.parse(e.newValue||settings));
+      try {
+        if (e.key === MESAS_KEY) setMesas(JSON.parse(e.newValue || '[]'));
+        if (e.key === RESERVAS_KEY) setReservas(JSON.parse(e.newValue || '[]'));
+        if (e.key === SETTINGS_KEY) {
+          const parsed = e.newValue ? JSON.parse(e.newValue) : null;
+          if (parsed) setSettings(prev => ({ ...prev, ...parsed }));
+        }
+      } catch (err) {
+        console.warn('[Reserva] Error en storage handler:', err);
+      }
     };
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
-  }, [settings]);
+  }, []);
 
   const handleChange = e => {
     const { id, value } = e.target;
-    // validación de días abiertos y festivos al cambiar fecha
+
     if (id === 'fecha' && value) {
       const day = new Date(value).getDay();
-      if (!settings.openDays.includes(day) || settings.holidays.includes(value)) {
+      const openDays = Array.isArray(settings.openDays) ? settings.openDays : [];
+      const holidays = Array.isArray(settings.holidays) ? settings.holidays : [];
+
+      if (!openDays.includes(day) || holidays.includes(value)) {
         alert('Lo sentimos, el restaurante está cerrado ese día.');
         return setForm(f => ({ ...f, fecha:'', hora:'', mesaId:'' }));
       }
-      // al cambiar fecha, reset hora y mesa
       return setForm(f => ({ ...f, fecha:value, hora:'', mesaId:'', invitados:1 }));
     }
+
+    if (id === 'invitados') {
+      const valNum = Number(value) || 1;
+      const capMax = mesas.find(m => m.id === form.mesaId)?.capacidad || 1;
+      const bounded = Math.min(Math.max(valNum, 1), capMax);
+      return setForm(f => ({ ...f, invitados: bounded }));
+    }
+
     setForm(f => ({ ...f, [id]: value }));
   };
 
@@ -57,7 +85,6 @@ export const Reserva = () => {
       alert('Selecciona primero fecha y hora.');
       return;
     }
-    // comprobar conflicto
     if (reservas.find(r => r.mesaId===mesaId && r.fecha===form.fecha && r.hora===form.hora)) {
       alert('Esa mesa YA está ocupada en ese horario.');
       return;
@@ -67,7 +94,7 @@ export const Reserva = () => {
 
   const handleSubmit = e => {
     e.preventDefault();
-    const { cliente, fecha, hora, mesaId, invitados } = form;
+    const { cliente, fecha, hora, mesaId } = form;
     if (!cliente||!fecha||!hora||!mesaId) {
       return alert('Completa todos los campos obligatorios.');
     }
@@ -75,28 +102,33 @@ export const Reserva = () => {
     const updated = [...reservas, nueva];
     localStorage.setItem(RESERVAS_KEY, JSON.stringify(updated));
     setReservas(updated);
-    alert(`¡Reserva confirmada para Mesa ${mesas.find(m=>m.id===mesaId).numero} a las ${hora}!`);
+    const mesaNumero = (mesas.find(m=>m.id===mesaId) || {}).numero;
+    alert(`¡Reserva confirmada para Mesa ${mesaNumero || mesaId} a las ${hora}!`);
     setForm({
       cliente:'', email:'', telefono:'',
       fecha:'', hora:'', mesaId:'', invitados:1, mensaje:'', status:'Pendiente'
     });
   };
 
-  // ** GENERA las horas disponibles según configuración **
+  const apertura = typeof settings.apertura === 'string' ? settings.apertura : '10:00';
+  const cierre   = typeof settings.cierre === 'string' ? settings.cierre : '22:00';
+  const duracion = 30;
+
+
   const timeOptions = form.fecha
-    ? generateTimeSlots(settings.apertura, settings.cierre, settings.duracion)
+    ? generateTimeSlots(apertura, cierre, duracion)
     : [];
 
-  // estado de mesas en la franja seleccionada
   const mesasEstado = mesas.map(m => {
-    const ocupada = reservas.some(r =>
-      r.mesaId===m.id && r.fecha===form.fecha && r.hora===form.hora
-    );
+    const ocupada = form.fecha && form.hora
+      ? reservas.some(r =>
+          r.mesaId===m.id && r.fecha===form.fecha && r.hora===form.hora
+        )
+      : false;
     const seleccionada = m.id===form.mesaId;
     return { ...m, ocupada, seleccionada };
   });
 
-  // capacidad máxima según la mesa elegida
   const capMax = mesas.find(m=>m.id===form.mesaId)?.capacidad || 1;
 
   return (
@@ -124,32 +156,55 @@ export const Reserva = () => {
         </div>
       </form>
 
-      {/* Mesas */}
-      {form.fecha && form.hora ? (
-        <div className="d-flex flex-wrap gap-3 justify-content-center mb-5">
-          {mesasEstado.map(m => (
-            <div key={m.id}
-                 onClick={()=>!m.ocupada && handleMesaClick(m.id)}
-                 className={`mesa-card p-3 text-center rounded-4 fw-semibold ${
-                   m.ocupada
-                     ? 'bg-secondary text-white'
-                     : m.seleccionada
-                       ? 'bg-warning text-dark border-dark'
-                       : 'bg-light text-dark'
-                 }`}
-                 style={{width:100, cursor: m.ocupada?'not-allowed':'pointer'}}>
-              Mesa {m.numero}
-              <div className="small">
-                {m.ocupada?'Ocupada': m.seleccionada?'Seleccionada':'Disponible'}
-              </div>
+      {/* Mesas SIEMPRE visibles con mejor diseño */}
+      <div className="d-flex flex-wrap gap-4 justify-content-center mb-5">
+        {mesasEstado.map(m => (
+          <div
+            key={m.id}
+            onClick={() => !m.ocupada && handleMesaClick(m.id)}
+            style={{
+              width: 120,
+              padding: '20px',
+              borderRadius: '15px',
+              boxShadow: m.seleccionada
+                ? '0 4px 15px rgba(255, 193, 7, 0.7)'
+                : '0 3px 8px rgba(0, 0, 0, 0.15)',
+              backgroundColor: m.ocupada
+                ? '#6c757d'
+                : m.seleccionada
+                ? '#ffc107'
+                : '#f8f9fa',
+              color: m.ocupada
+                ? '#fff'
+                : m.seleccionada
+                ? '#000'
+                : '#333',
+              cursor: m.ocupada ? 'not-allowed' : 'pointer',
+              textAlign: 'center',
+              transition: 'all 0.3s ease-in-out',
+              transform: m.seleccionada ? 'scale(1.05)' : 'scale(1)',
+            }}
+          >
+            <FaChair size={28} style={{ marginBottom: 5 }} />
+            <h6 className="fw-bold">Mesa {m.numero}</h6>
+            <div className="small">
+              {m.ocupada ? (
+                <>
+                  <FaTimesCircle className="me-1" /> Ocupada
+                </>
+              ) : m.seleccionada ? (
+                <>
+                  <FaCheckCircle className="me-1" /> Seleccionada
+                </>
+              ) : (
+                <>
+                  <FaCheckCircle className="me-1 text-success" /> Disponible
+                </>
+              )}
             </div>
-          ))}
-        </div>
-      ) : (
-        <div className="alert alert-info text-center">
-          Elige fecha y hora para mostrar mesas.
-        </div>
-      )}
+          </div>
+        ))}
+      </div>
 
       {/* Formulario final */}
       {form.fecha && form.hora && (
